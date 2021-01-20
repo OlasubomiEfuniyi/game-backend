@@ -1,0 +1,27 @@
+{
+  "name": "game-backend",
+  "version": "1.0.0",
+  "description": "This is the server side of the game that will handle connection between multiple game clients as well as multiple game worlds",
+  "main": "app.js",
+  "dependencies": {
+    "ws": "^7.4.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OlasubomiEfuniyi/game-backend.git"
+  },
+  "author": "Bryan Ndofor, Temitope Adetunji, and  Olasubomi Efuniyi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/OlasubomiEfuniyi/game-backend/issues"
+  },
+  "homepage": "https://github.com/OlasubomiEfuniyi/game-backend#readme",
+  "optionalDependencies": {
+    "bufferutil": "^4.0.3",
+    "utf-8-validate": "^5.0.4"
+  }
+}
