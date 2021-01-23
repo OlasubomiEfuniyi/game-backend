@@ -1,42 +1,49 @@
 class Node {
     constructor(data, next) {
-        this.data = data;
-        this.next = next;
+        this._data = data;
+        this._next = next;
     }
 
+    //Underscores are used to create backing states. Otherwise, a stack overflow will occur.
+    //The basic idea is that we want the name of the field as we store it to be slightly different from the 
+    //name through which it is accessed or set.
     get data() {
-        return this.data;
+        return this._data;
     }
 
     get next() {
-        return this.next;
+        return this._next;
     }
 
-    setNext(next) {
-        this.next = next;
+    set next(next) {
+        this._next = next;
     }
 
-    setData(data) {
-        this.data = data;
+    set data(data) {
+        this._data = data;
     }
 }
 
 class LinkedList {
     constructor() {
-        this.head = null;
-        this.size = 0;
+        this._head = null;
+        this._size = 0;
     }
 
     get size() {
-        return this.size;
+        return this._size;
+    }
+
+    set size(s) {
+        this._size = s;
     }
 
     //Add a node to the back of the linked list
     addToBack(data) {
-        if(this.head === null) {
-            this.head = new Node(data, null);
+        if(this._head === null) {
+            this._head = new Node(data, null);
         } else {
-            let current = this.head;
+            let current = this._head;
 
             while(current.next != null) {
                 current = current.next;
@@ -45,17 +52,17 @@ class LinkedList {
             current.next = new Node(data, null);
         }
 
-        this.size++;
+        this._size++;
     }
 
     //Add a node to the front of the linked list
     addToFront(data) {
-        if(this.head === null) {
-            this.head = new Node(data, null);
+        if(this._head === null) {
+            this._head = new Node(data, null);
         } else {
-            let oldHead = this.head;
+            let oldHead = this._head;
 
-            this.head = new Node(data, oldHead);
+            this._head = new Node(data, oldHead);
         }
 
         this.size++;
@@ -63,13 +70,13 @@ class LinkedList {
 
     //Remove a node from the front of the linked list and return its data
     removeFromFront() {
-        if(this.head == null) {
+        if(this._head == null) {
             return null;
         } else {
-            let retValue = this.head.data;
-            this.head = this.head.next;
+            let retValue = this._head.data;
+            this._head = this._head.next;
 
-            this.size--;
+            this._size--;
 
             return retValue;
         }
@@ -77,10 +84,10 @@ class LinkedList {
 
     //Remove a node from the back of the linked list and return its data
     removeFromBack() {
-        if(this.head == null) {
+        if(this._head == null) {
             return null;
         } else {
-            let current = this.head;
+            let current = this._head;
             let previous = null;
 
             while(current.next !== null) {
@@ -89,16 +96,16 @@ class LinkedList {
             }
 
             if(previous === null) { //We are removing the head
-                let retValue = this.head.data;
-                this.head = null;
+                let retValue = this._head.data;
+                this._head = null;
 
-                this.size--;
+                this._size--;
                 return retValue;
             } else {
                 let retValue = current.data;
-                previous.setNext(null);
+                previous.next = null;
 
-                this.size--;
+                this._size--;
                 return retValue;
             }
         }
