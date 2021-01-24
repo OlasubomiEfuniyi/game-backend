@@ -9,6 +9,8 @@ const portList = new LinkedList();
 const codeToPlayers = new Map();
 //A map from game code to port number
 const codeToPort = new Map();
+//a map from game code to list of web sockets for each player
+const codeToWebSockets = new Map();
 
 
 //A web socket for handling game world logistics with all clients
@@ -47,7 +49,7 @@ function handleMessage(ws, message) {
             createGame(ws);
             break;
         case "PORT":
-            getPort(ws, msg.gameCode);
+            getPort(ws, Number.parseInt(msg.gameCode));
             break;
         default:
             let result = {status: "FAILURE"};
@@ -58,11 +60,8 @@ function handleMessage(ws, message) {
 }
 
 //Return the port number associated with the game code provided
-function getPort(ws, gameCode) {
-    let gc = Number.parseInt(gameCode);
+function getPort(ws, gc) {
     let result =  {status: "SUCCESS", type: "PORT", port: codeToPort.get(gc)};
-    console.log(codeToPort);
-    console.log(gameCode);
     ws.send(JSON.stringify(result));
 }
 
@@ -78,15 +77,28 @@ function createGame(ws) {
             console.log(`Created web socket server for game world with code ${gameCode} on port ${portNumber}`);
             codeToPort.set(gameCode, portNumber);
 
-            newWss.on('connection', (ws) => {
-                console.log(`Player connected to game world with game code ${gameCode}`);
-                ws.on('message', (message) => {handleGameWorldMessage(ws, gameCode, message)});
-            });
-        
+            setupNewGameWorldWebSocketServer(gameCode, newWss);
+
             let result = {status: "SUCCESS", type: "CREATE", gameCode: gameCode, port: portNumber};
             ws.send(JSON.stringify(result));
         });
     }
+}
+
+//This function sets up a new web server socket for a game world
+function setupNewGameWorldWebSocketServer(gc, webSocketServer) {
+    webSocketServer.on('connection', (ws) => {
+        console.log(`Player connected to game world with game code ${gc}`);
+
+        //Add web socket for newly connected player to map for book keeping
+        if(codeToWebSockets.has(gc)) {
+            codeToWebSockets.get(gc).push(ws);
+        } else {
+            codeToWebSockets.set(gc, [ws]);
+        }
+
+        ws.on('message', (message) => {handleGameWorldMessage(gc, message)});
+    });
 }
 
 //This function generates a unique game code
@@ -97,10 +109,9 @@ function generateGameCode() {
 
 /**************************************************** Game World Functions *******************************************************/
 //This function handles messages sent to game worlds
-function handleGameWorldMessage(ws, gameCode, message) {
+function handleGameWorldMessage(gc, message) {
     let msg = JSON.parse(message);
     let result = {};
-    let gc = Number.parseInt(gameCode);
 
     console.log(`received message: ${message}`);
     switch(msg.type) {
@@ -118,5 +129,7 @@ function handleGameWorldMessage(ws, gameCode, message) {
             break;
     };
 
-    ws.send(JSON.stringify(result));
+    codeToWebSockets.get(gc).forEach(ws => {
+        ws.send(JSON.stringify(result));
+    });
 }
