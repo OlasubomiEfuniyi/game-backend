@@ -11,6 +11,8 @@ const codeToPlayers = new Map();
 const codeToPort = new Map();
 //a map from game code to list of web sockets for each player
 const codeToWebSockets = new Map();
+//a map from game code to the game data
+const codeToData = new Map();
 
 
 //A web socket for handling game world logistics with all clients
@@ -124,6 +126,9 @@ function handleGameWorldMessage(gc, message) {
 
             result = {status: "SUCCESS", type: "CONNECT", playerWaitlist: codeToPlayers.get(gc)};
             break;
+        case "START":
+            handleStartGame(gc);
+            break;
         default:
             result = {status: "FAILURE"};
             break;
@@ -132,4 +137,12 @@ function handleGameWorldMessage(gc, message) {
     codeToWebSockets.get(gc).forEach(ws => {
         ws.send(JSON.stringify(result));
     });
+}
+
+//This function handles a request to start a game given the game code associated with the game world
+function handleStartGame(gc) {
+    //Need to create game pieces for each player
+    //Need to create food in the game world
+    //Need to keep track of all of this data for the game world
+    //Need to return the data to all the players connected to the game world
 }
