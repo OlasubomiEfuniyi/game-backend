@@ -3,7 +3,6 @@ const LinkedList = require("./linked-list").LinkedList;
 const { GameData } = require("./game-data");
 
 const port = 1024;
-const NUM_FOOD = 1000;
 
 //Linked list to keep track of port numbers
 const portList = new LinkedList();
@@ -35,12 +34,12 @@ wss.on('connection', (ws) => {handleConnection(ws);});
 /********************************************* Overseer Functions ***********************************************/
 //This function handles a successful connection between a client and the server
 function handleConnection(ws) {
-    console.log("client is connected");
-    ws.on('message', (message) => {handleMessage(ws, message);});
+    console.log("client is connected to game server");
+    ws.on('message', (message) => {handleGameServerMessage(ws, message);});
 }
 
-//This function hanles a message from a connected client
-function handleMessage(ws, message) {
+//This function hanles a message from a connected client via their web socket connection
+function handleGameServerMessage(ws, message) {
     let msg = JSON.parse(message);
 
     console.log("received: %s", message);
@@ -53,7 +52,7 @@ function handleMessage(ws, message) {
             getPort(ws, Number.parseInt(msg.gameCode));
             break;
         default:
-            let result = {status: "FAILURE"};
+            let result = {status: "FAILURE", msg: `Invalid command: ${msg.type}`};
             ws.send(JSON.stringify(result));
             break;
     };
@@ -85,6 +84,7 @@ function createGame(ws) {
                 ws.on('message', (message) => {handleGameWorldMessage(gameCode, message, ws)});
             });
 
+            //Return this result to client after the server is created
             let result = {status: "SUCCESS", type: "CREATE", gameCode: gameCode};
             ws.send(JSON.stringify(result));
         });
@@ -93,10 +93,17 @@ function createGame(ws) {
 
 //Return the port number associated with the game code provided
 function getPort(ws, gc) {
-    let portNumber = codeToGameData.get(gc).port;
+    let gameData = codeToGameData.get(gc);
 
-    let result =  {status: "SUCCESS", type: "PORT", port: portNumber};
-    ws.send(JSON.stringify(result));
+    if(gameData !== undefined) {
+        let portNumber = gameData.port;
+
+        let result =  {status: "SUCCESS", type: "PORT", port: portNumber};
+        ws.send(JSON.stringify(result));
+    } else {
+        ws.send(JSON.stringify({status: "FAILURE", msg: "Invalid game code"}));
+    }
+
 }
 
 
@@ -123,53 +130,42 @@ function handleGameWorldMessage(gc, message, ws) {
                 let name = msg.name;
 
                 gameData.addPlayer(id, name, ws);
-            } 
+                result = {status: "SUCCESS", type: "CONNECT", playerWaitlist: gameData.getPlayerNames(), id: id, gameCode: gc};
+            } else {
+                result = {status: "FAILURE", msg: "Invalid game code provided on CONNECT"}
+            }
 
-            result = {status: "SUCCESS", type: "CONNECT", playerWaitlist: gameData.getPlayerNames(), id: id};
             break;
         case "START":
-            gameData = handleStartGame(gc);
-            result = {status: "SUCCESS", type: "START", gamePieces: gameData.gamePieces, foodPieces: gameData.foodPieces};
+            handleStartGame(gc, ws);
             break;
         default:
-            result = {status: "FAILURE"};
+            result = {status: "FAILURE", msg: `Invalid comamand: ${msg.type}`};
             break;
     };
 
-    codeToGameData.get(gc).notifyPlayers(JSON.stringify(result));
+    codeToGameData.get(gc).notifyPlayers(result);
 }
 
 
 //This function handles a request to start a game given the game code associated with the game world
-function handleStartGame(gc) {
-    let players = codeToPlayers.get(gc);
+function handleStartGame(gc, ws) {
+    let gameData = codeToGameData.get(gc);
 
-    //Create a game piece for each player
-    let gamePieces = players.map((player, index, arr) => {
-        let x = Math.floor(Math.random() * INITIAL_MAX_PLAYER_X);
-        let y = Math.floor(Math.random() * INITIAL_MAX_PLAYER_Y); 
+    if(gameData) {
+        //Create a game piece for each player
+        codeToGameData.get(gc).createGamePieces();
 
-        return new GamePiece(x, y, undefined, PLAYER, colors[index % colors.length]);
-    });
+        //Create food in the game world
+        codeToGameData.get(gc).createFood();
 
-    //Create food in the game world
-    let food = [];
-    for(let i = 0; i < NUM_FOOD; i++) {
-        let x = Math.floor(Math.random() * MAX_X);
-        let y = Math.floor(Math.random() * MAX_Y); 
-        let foodPiece = new GamePiece(x, y, FOOD_RADIUS, FOOD, colors[i % colors.length]);
-
-        food.push(foodPiece);
+        gameData.notifyPlayers({status: "SUCCESS", type: "START", playerData: gameData.playerData, foodData: gameData.foodData, leaderboard: gameData.leaderboard});
+    } else { //Notify the player that they game code they provided is invalid
+        ws.send(JSON.stringify({status: "FAILURE", msg: "Invalid game code provided on START"}));
     }
-
-    let gameData = new GameData(gamePieces, food);
-
-    //Keep track of all of this data for the game world
-    codeToData.set(gc, gameData);
-
-    return gameData;
 }
 
+//This function generates a unique player id
 function generateUniqueID() {
     return Date.now();
 }

@@ -1,10 +1,10 @@
-const { GamePiece, FOOD } = require("./game-piece");
+const { GamePiece, FOOD, COLORS, MINIMUM_RADIUS } = require("./game-piece");
 const { PlayerData } = require("./player-data");
 const { LeaderBoard } = require("./leaderboard");
 
-const MAX_X = 1000;
-const MAX_Y = 1000;
-const colors = ["red", "gree", "blue","orange", "yellow", "black", "brown"];
+const MAX_X = 10000;
+const MAX_Y = 10000;
+const NUM_FOOD = 1000;
 const FOOD_RADIUS = 5;
 
 class GameData {
@@ -19,8 +19,15 @@ class GameData {
         this._gameCode = -1;
     }
 
+    //Expose a map from a players id to an object containing their id, name and game pieces only.
     get playerData() {
-        return this._playerData;
+        let pd = new Map();
+
+        this._playerData.forEach((player, id, map) => {
+            pd.set(id, {id: id, name: player.name, pieces: player.pieces});
+        });
+
+        return pd;
     }
 
     get numPlayers() {
@@ -45,6 +52,10 @@ class GameData {
 
     get gameCode() {
         return this._gameCode;
+    }
+
+    get leaderboard() {
+        return this._leaderBoard.board;
     }
 
     set port(port) {
@@ -77,24 +88,49 @@ class GameData {
         return res;
     }
 
+
     //This method sends message to all the players in the game via their web socket
     notifyPlayers(message) {
         this._playerData.forEach((player, id, map) => {
-            player.webSocket.send(message);
+            //Replace maps with objects whose dataType key signify that it is a map and whose 
+            //value key is a 2d array representing all the entries in the map.
+            player.webSocket.send(JSON.stringify(message, (key, value) => {
+                if(value instanceof Map) {
+                  return {
+                    dataType: 'Map',
+                    value: Array.from(value.entries()),
+                  };
+                } else {
+                  return value;
+                }
+             }));
         })
     }
 
+    
+
     //This method adds food to the game
-    addFood() {
-        let x = Math.floor(Math.random() * MAX_X);
-        let y = Math.floor(Math.random() * MAX_Y);
-
-        let foodPiece = new GamePiece(x, y, FOOD_RADIUS, FOOD, colors[(Math.floor(Math.random() * colors.length))]);
-
-        this._foodData.push(foodPiece);
+    createFood() {
+        for(let i = 0; i < NUM_FOOD; i++) {
+            let x = Math.floor(Math.random() * MAX_X);
+            let y = Math.floor(Math.random() * MAX_Y);
+    
+            let foodPiece = new GamePiece(x, y, FOOD_RADIUS, FOOD, COLORS[(Math.floor(Math.random() * (COLORS.length - 1)))]);
+    
+            this._foodData.push(foodPiece);
+        }
     }
+
+    //This method creates game pieces for all players in the game
+    createGamePieces() {
+        this._playerData.forEach((player, id, map) => {
+            let x = Math.floor(Math.random() * MAX_X);
+            let y = Math.floor(Math.random() * MAX_Y);
+
+            player.addGamePiece(x, y, MINIMUM_RADIUS);
+        });
+    }
+
 }
 
 exports.GameData = GameData;
-exports.MAX_X = MAX_X;
-exports.MAX_Y = MAX_Y;

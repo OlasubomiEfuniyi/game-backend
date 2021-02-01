@@ -1,6 +1,7 @@
 const MINIMUM_RADIUS = 10;
 const FOOD = 1;
 const PLAYER = 2;
+const COLORS = ["red", "green", "blue","orange", "yellow", "black", "brown"];
 
 class GamePiece {
     constructor(x = 0, y = 0, radius = MINIMUM_RADIUS, type = FOOD, color = "green") {
@@ -78,3 +79,4 @@ exports.GamePiece = GamePiece;
 exports.FOOD = FOOD;
 exports.PLAYER = PLAYER;
 exports.MINIMUM_RADIUS = MINIMUM_RADIUS;
+exports.COLORS = COLORS;
