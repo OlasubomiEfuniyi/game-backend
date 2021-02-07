@@ -1,4 +1,4 @@
-const MINIMUM_RADIUS = 10;
+const MINIMUM_RADIUS = 100;
 const FOOD = 1;
 const PLAYER = 2;
 const COLORS = ["red", "green", "blue","orange", "yellow", "black", "brown"];

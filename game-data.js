@@ -7,6 +7,11 @@ const MAX_Y = 10000;
 const NUM_FOOD = 1000;
 const FOOD_RADIUS = 5;
 
+// A game can be in one of the following 3 states 
+const WAITING = "WAITING";
+const STARTED = "STARTED";
+const ENDED = "ENDED";
+
 class GameData {
     constructor() {
         this._playerData = new Map(); //A map from player id to information about the player including information about the player's game piece.
@@ -17,6 +22,7 @@ class GameData {
         this._leaderBoard = new LeaderBoard(); //An up to date listing of the players' scores
         this._port = -1;
         this._gameCode = -1;
+        this._gameState = WAITING;
     }
 
     //Expose a map from a players id to an object containing their id, name and game pieces only.
@@ -58,12 +64,36 @@ class GameData {
         return this._leaderBoard.board;
     }
 
+    get gameState() {
+        return this._gameState;
+    }
+
     set port(port) {
         this._port = port;
     }
 
     set gameCode(gc) {
         this._gameCode = gc;
+    }
+
+    startGame() {
+        this._gameState = STARTED;
+    }
+
+    endGame() {
+        this._gameState = ENDED;
+    }
+
+    isGameWaiting() {
+        return this._gameState === WAITING;
+    }
+
+    isGameStarted() {
+        return this._gameState === STARTED;
+    }
+
+    isGameEnded() {
+        return this._gameState === ENDED;
     }
 
     //This method adds a player to the game

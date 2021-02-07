@@ -126,13 +126,23 @@ function handleGameWorldMessage(gc, message, ws) {
             if(codeToGameData.has(gc)) { //There is already game data associated with this game code. This should always be the
                 //case if the player provides game code for a created game
                 let gameData = codeToGameData.get(gc);
-                let id = generateUniqueID();
-                let name = msg.name;
 
-                gameData.addPlayer(id, name, ws);
-                result = {status: "SUCCESS", type: "CONNECT", playerWaitlist: gameData.getPlayerNames(), id: id, gameCode: gc};
+                //You can only connect to a game that is in the waiting state
+                if(gameData.isGameWaiting()) {
+                    let id = generateUniqueID();
+                    let name = msg.name;
+                    gameData.addPlayer(id, name, ws);
+                    result = {status: "SUCCESS", type: "CONNECT", playerWaitlist: gameData.getPlayerNames(), id: id, gameCode: gc};
+
+                    codeToGameData.get(gc).notifyPlayers(result);
+                } else {
+                    result = {status: "FAILURE", msg: "Attempt to connect to a game that is not waiting to be connected to"};
+                    ws.send(JSON.stringify(result));
+                }
+                
             } else {
                 result = {status: "FAILURE", msg: "Invalid game code provided on CONNECT"}
+                ws.send(JSON.stringify(result));
             }
 
             break;
@@ -141,10 +151,9 @@ function handleGameWorldMessage(gc, message, ws) {
             break;
         default:
             result = {status: "FAILURE", msg: `Invalid comamand: ${msg.type}`};
+            codeToGameData.get(gc).notifyPlayers(result);
             break;
     };
-
-    codeToGameData.get(gc).notifyPlayers(result);
 }
 
 
@@ -154,12 +163,18 @@ function handleStartGame(gc, ws) {
 
     if(gameData) {
         //Create a game piece for each player
-        codeToGameData.get(gc).createGamePieces();
+       gameData.createGamePieces();
 
         //Create food in the game world
-        codeToGameData.get(gc).createFood();
+        gameData.createFood();
 
-        gameData.notifyPlayers({status: "SUCCESS", type: "START", playerData: gameData.playerData, foodData: gameData.foodData, leaderboard: gameData.leaderboard});
+        //Signify that the game has started
+        if(gameData.isGameWaiting()) {
+            gameData.startGame();
+            gameData.notifyPlayers({status: "SUCCESS", type: "START", playerData: gameData.playerData, foodData: gameData.foodData, leaderboard: gameData.leaderboard});
+        } else {
+            ws.send(JSON.stringify({status: "FAILURE", msg: "Attempt to start a game that is not waiting to be started"}));
+        }
     } else { //Notify the player that they game code they provided is invalid
         ws.send(JSON.stringify({status: "FAILURE", msg: "Invalid game code provided on START"}));
     }
