@@ -2,10 +2,10 @@ const { GamePiece, FOOD, COLORS, MINIMUM_RADIUS } = require("./game-piece");
 const { PlayerData } = require("./player-data");
 const { LeaderBoard } = require("./leaderboard");
 
-const MAX_X = 10000;
-const MAX_Y = 10000;
+const MAX_X = 5000;
+const MAX_Y = 5000;
 const NUM_FOOD = 1000;
-const FOOD_RADIUS = 5;
+const FOOD_RADIUS = 10;
 
 // A game can be in one of the following 3 states 
 const WAITING = "WAITING";
